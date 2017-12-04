@@ -18,6 +18,7 @@ package org.terasology.signalling.blockFamily;
 import org.terasology.blockNetwork.BlockNetworkUtil;
 import org.terasology.entitySystem.entity.EntityRef;
 import org.terasology.entitySystem.prefab.Prefab;
+import org.terasology.math.Rotation;
 import org.terasology.math.Side;
 import org.terasology.math.SideBitFlag;
 import org.terasology.math.geom.Vector3i;
@@ -27,15 +28,20 @@ import org.terasology.signalling.components.SignalProducerComponent;
 import org.terasology.world.block.Block;
 import org.terasology.world.block.BlockBuilderHelper;
 import org.terasology.world.block.BlockComponent;
+import org.terasology.world.block.BlockUri;
+import org.terasology.world.block.family.BlockSections;
 import org.terasology.world.block.family.MultiConnectFamily;
 import org.terasology.world.block.family.RegisterBlockFamily;
 import org.terasology.world.block.loader.BlockFamilyDefinition;
 import org.terasology.world.block.shapes.BlockShape;
 
+import javax.print.attribute.standard.Sides;
+
 /**
  * @author Marcin Sciesinski <marcins78@gmail.com>
  */
 @RegisterBlockFamily("cable")
+@BlockSections({"no_connections", "one_connection", "line_connection", "2d_corner", "3d_corner", "2d_t", "cross", "3d_side", "five_connections", "all"})
 public class SignalCableBlockFamily extends MultiConnectFamily {
     public SignalCableBlockFamily(BlockFamilyDefinition definition, BlockShape shape, BlockBuilderHelper blockBuilder) {
         super(definition, shape, blockBuilder);
@@ -43,16 +49,34 @@ public class SignalCableBlockFamily extends MultiConnectFamily {
 
     public SignalCableBlockFamily(BlockFamilyDefinition definition, BlockBuilderHelper blockBuilder) {
         super(definition, blockBuilder);
+
+        BlockUri blockUri = new BlockUri(definition.getUrn());
+
+        this.registerBlock(blockUri, definition, blockBuilder, "no_connections", (byte) 0, Rotation.allValues());
+        this.registerBlock(blockUri, definition, blockBuilder, "one_connection", SideBitFlag.getSides(Side.BACK), Rotation.allValues());
+        this.registerBlock(blockUri, definition, blockBuilder, "line_connection", SideBitFlag.getSides(Side.BACK, Side.FRONT), Rotation.allValues());
+        this.registerBlock(blockUri, definition, blockBuilder, "2d_corner", SideBitFlag.getSides(Side.LEFT, Side.BACK), Rotation.allValues());
+        this.registerBlock(blockUri, definition, blockBuilder, "3d_corner", SideBitFlag.getSides(Side.LEFT, Side.BACK, Side.TOP), Rotation.allValues());
+        this.registerBlock(blockUri, definition, blockBuilder, "2d_t", SideBitFlag.getSides(Side.LEFT, Side.BACK, Side.FRONT), Rotation.allValues());
+        this.registerBlock(blockUri, definition, blockBuilder, "cross", SideBitFlag.getSides(Side.RIGHT, Side.LEFT, Side.BACK, Side.FRONT), Rotation.allValues());
+        this.registerBlock(blockUri, definition, blockBuilder, "3d_side", SideBitFlag.getSides(Side.LEFT, Side.BACK, Side.FRONT, Side.TOP), Rotation.allValues());
+        this.registerBlock(blockUri, definition, blockBuilder, "five_connections", SideBitFlag.getSides(Side.LEFT, Side.BACK, Side.FRONT, Side.TOP, Side.BOTTOM), Rotation.allValues());
+        this.registerBlock(blockUri, definition, blockBuilder, "all", SideBitFlag.getSides(Side.LEFT, Side.BACK, Side.FRONT, Side.TOP, Side.BOTTOM, Side.RIGHT), Rotation.allValues());
     }
 
     @Override
     public byte getConnectionSides() {
-        return 63;
+        return SideBitFlag.getSides(Side.LEFT, Side.BACK, Side.FRONT, Side.TOP, Side.BOTTOM, Side.RIGHT);
     }
 
     @Override
-    public Block getBlockForNeighborUpdate(Vector3i location, Block oldBlock) {
-        return super.getBlockForNeighborUpdate(location, oldBlock);
+    public boolean horizontalOnly() {
+        return false;
+    }
+
+    @Override
+    public Block getArchetypeBlock() {
+        return blocks.get(SideBitFlag.getSides(Side.RIGHT, Side.LEFT));
     }
 
     @Override
@@ -118,5 +142,6 @@ public class SignalCableBlockFamily extends MultiConnectFamily {
 
         return false;
     }
+
 
 }
