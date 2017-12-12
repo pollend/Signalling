@@ -35,18 +35,35 @@ import org.terasology.world.block.family.RegisterBlockFamily;
 import org.terasology.world.block.loader.BlockFamilyDefinition;
 import org.terasology.world.block.shapes.BlockShape;
 
-import javax.print.attribute.standard.Sides;
-
 /**
+ * SignalCableBlockFamily defines the block family for the cable in the Signalling module.
+ * It extends {@link org.terasology.world.block.family.MultiConnectFamily MultiConnectFamily},
+ * a very versatile block family for families that require multiple connections, hence the name.
+ * 
  * @author Marcin Sciesinski <marcins78@gmail.com>
  */
 @RegisterBlockFamily("cable")
 @BlockSections({"no_connections", "one_connection", "line_connection", "2d_corner", "3d_corner", "2d_t", "cross", "3d_side", "five_connections", "all"})
 public class SignalCableBlockFamily extends MultiConnectFamily {
+    /**
+     * This constructor isn't used, but it's here just in case
+     * 
+     * @param definition The block family definition, as passed in by the engine
+     * @param shape The shape of the block
+     * @param blockBuilder The block builder, as passed in by the engine
+     */
     public SignalCableBlockFamily(BlockFamilyDefinition definition, BlockShape shape, BlockBuilderHelper blockBuilder) {
         super(definition, shape, blockBuilder);
     }
 
+    /**
+     * This is the constructor that should called by the engine to make this block family.
+     * It first calls it's super constructor, then gets it's block URI to base the individual block URIs off of.
+     * The next ten lines "register" the blocks, see {@link org.terasology.world.block.family.MultiConnectFamily.registerBlock MultiConnect#registerBlock}
+     * 
+     * @param definition The block family definition, as passed in by the engine
+     * @param blockBuilder The block builder, as passed in by the engine
+     */
     public SignalCableBlockFamily(BlockFamilyDefinition definition, BlockBuilderHelper blockBuilder) {
         super(definition, blockBuilder);
 
@@ -64,16 +81,22 @@ public class SignalCableBlockFamily extends MultiConnectFamily {
         this.registerBlock(blockUri, definition, blockBuilder, "all", SideBitFlag.getSides(Side.LEFT, Side.BACK, Side.FRONT, Side.TOP, Side.BOTTOM, Side.RIGHT), Rotation.allValues());
     }
 
+    /**
+     * @return All of the sides because cables can connect on any side
+     */
     @Override
     public byte getConnectionSides() {
         return SideBitFlag.getSides(Side.LEFT, Side.BACK, Side.FRONT, Side.TOP, Side.BOTTOM, Side.RIGHT);
     }
 
-    @Override
-    public boolean horizontalOnly() {
-        return false;
-    }
+    //    @Override
+    //    public boolean horizontalOnly() {
+    //        return false;
+    //    }
 
+    /**
+     * Sides.LEFT and Sides.RIGHT map to a straight cable
+     */
     @Override
     public Block getArchetypeBlock() {
         return blocks.get(SideBitFlag.getSides(Side.RIGHT, Side.LEFT));
@@ -104,6 +127,16 @@ public class SignalCableBlockFamily extends MultiConnectFamily {
     }
 
 
+    /**
+     * Tests if the block should form a connection on a given side to a given neighbor entity
+     * 
+     * @param connectSide The side of the original block in question
+     * @param input Boolean indicating if the cable has an input line
+     * @param output Boolean indicating if the cable block has an output line
+     * @param neighborEntity The entity of the neighboring block on connectSide
+     * 
+     * @return True if the cable should connect to the connectSide
+     */
     private boolean connectsToNeighbor(Side connectSide, boolean input, boolean output, EntityRef neighborEntity) {
         final Side oppositeDirection = connectSide.reverse();
 
