@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 MovingBlocks
+ * Copyright 2017 MovingBlocks
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.terasology.signalling.componentSystem;
+package org.terasology.signalling.action;
 
 import org.terasology.entitySystem.entity.EntityRef;
 import org.terasology.entitySystem.event.ReceiveEvent;
@@ -40,7 +40,7 @@ import java.util.EnumMap;
  * Component system that handles {@link ScrewdriverComponent} actions.
  */
 @RegisterSystem(RegisterMode.AUTHORITY)
-public class ScrewdriverSystem extends BaseComponentSystem {
+public class ScrewdriverAction extends BaseComponentSystem {
     @In
     private WorldProvider worldProvider;
     @In
