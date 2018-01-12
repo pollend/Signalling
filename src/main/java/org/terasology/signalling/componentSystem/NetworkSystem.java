@@ -26,13 +26,14 @@ import org.terasology.logic.health.BeforeDestroyEvent;
 import org.terasology.math.Side;
 import org.terasology.math.SideBitFlag;
 import org.terasology.math.geom.Vector3i;
+import org.terasology.signalling.blockFamily.SignalUpdateFamily;
 import org.terasology.signalling.components.CableComponent;
 import org.terasology.signalling.components.LeafNodeComponent;
 import org.terasology.registry.In;
-import org.terasology.signalling.components.NetworkDistanceCacheComponent;
-import org.terasology.signalling.components.SignalConsumerComponent;
 import org.terasology.world.BlockEntityRegistry;
+import org.terasology.world.block.Block;
 import org.terasology.world.block.BlockComponent;
+import org.terasology.world.block.family.BlockFamily;
 
 import java.util.Map;
 import java.util.Set;
@@ -42,6 +43,16 @@ import java.util.TreeMap;
 public class NetworkSystem extends BaseComponentSystem {
     @In
     private BlockEntityRegistry blockEntityRegistry;
+
+    public Side getConnections(EntityRef entityRef) {
+        BlockComponent blockComponent = entityRef.getComponent(BlockComponent.class);
+        Block block = blockComponent.getBlock();
+        BlockFamily blockFamily =  block.getBlockFamily();
+        if(blockFamily instanceof SignalUpdateFamily)
+        {
+            blockFamily.
+        }
+    }
 
 
     public Map<EntityRef, Byte> findLeafNodesWithSide(Vector3i location) {
@@ -83,8 +94,6 @@ public class NetworkSystem extends BaseComponentSystem {
     public Map<EntityRef, Integer> findDistanceFromLeafToAllOtherLeafs(Vector3i location, Side side) {
         Map<EntityRef, Integer> result = Maps.newLinkedHashMap();
         EntityRef startEntityRef = blockEntityRegistry.getBlockEntityAt(location);
-
-//        NetworkDistanceCacheComponent networkDistanceCacheComponent = startEntityRef.getComponent(NetworkDistanceCacheComponent.class);
 
         TreeMap<Integer, Set<EntityRef>> orderCollection = new TreeMap<>();
         orderCollection.put(1, Sets.newHashSet(blockEntityRegistry.getBlockEntityAt(new Vector3i(location).add(side.getVector3i()))));
