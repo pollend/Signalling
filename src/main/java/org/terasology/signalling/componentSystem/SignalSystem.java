@@ -15,54 +15,35 @@
  */
 package org.terasology.signalling.componentSystem;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Set;
-
-import javax.annotation.Nullable;
-
+import com.google.common.collect.Maps;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.terasology.blockNetwork.BlockNetworkUtil;
-import org.terasology.blockNetwork.EfficientBlockNetwork;
-import org.terasology.blockNetwork.Network2;
-import org.terasology.blockNetwork.NetworkChangeReason;
 import org.terasology.engine.Time;
 import org.terasology.entitySystem.entity.EntityRef;
-import org.terasology.entitySystem.entity.lifecycleEvents.OnChangedComponent;
 import org.terasology.entitySystem.event.ReceiveEvent;
 import org.terasology.entitySystem.systems.BaseComponentSystem;
 import org.terasology.entitySystem.systems.RegisterMode;
 import org.terasology.entitySystem.systems.RegisterSystem;
-import org.terasology.entitySystem.systems.UpdateSubscriberSystem;
 import org.terasology.logic.config.ModuleConfigManager;
 import org.terasology.logic.health.BeforeDestroyEvent;
 import org.terasology.math.Side;
 import org.terasology.math.SideBitFlag;
-import org.terasology.math.geom.Vector3i;
 import org.terasology.registry.In;
+import org.terasology.registry.Share;
 import org.terasology.signalling.components.CableComponent;
-import org.terasology.signalling.components.LeafNodeComponent;
-import org.terasology.signalling.components.SignalConductorComponent;
-import org.terasology.signalling.components.SignalConsumerAdvancedStatusComponent;
-import org.terasology.signalling.components.SignalConsumerComponent;
-import org.terasology.signalling.components.SignalConsumerStatusComponent;
-import org.terasology.signalling.components.SignalProducerComponent;
+import org.terasology.signalling.components.SignalLeafComponent;
+import org.terasology.signalling.event.LeafNodeSignalChange;
 import org.terasology.world.BlockEntityRegistry;
 import org.terasology.world.WorldProvider;
-import org.terasology.world.block.BeforeDeactivateBlocks;
 import org.terasology.world.block.BlockComponent;
-import org.terasology.world.block.OnActivatedBlocks;
 import org.terasology.world.block.items.OnBlockItemPlaced;
 
-import com.google.common.base.Predicate;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
+import java.util.Map;
+import java.util.Set;
+
 
 @RegisterSystem(value = RegisterMode.AUTHORITY)
+@Share(value = SignalSystem.class)
 public class SignalSystem extends BaseComponentSystem {
     private static final Logger logger = LoggerFactory.getLogger(SignalSystem.class);
 
@@ -70,12 +51,12 @@ public class SignalSystem extends BaseComponentSystem {
     private Time time;
     @In
     private WorldProvider worldProvider;
-
     @In
     private BlockEntityRegistry blockEntityRegistry;
-
     @In
     private ModuleConfigManager moduleConfigManager;
+    @In
+    private NetworkSystem networkSystem;
 
 
     /**
@@ -86,17 +67,17 @@ public class SignalSystem extends BaseComponentSystem {
      */
     @ReceiveEvent()
     public void onBlockPlaced(OnBlockItemPlaced event, EntityRef entityRef) {
-        EntityRef ref = event.getPlacedBlock();
-        final Vector3i location = event.getPosition();
-        if (ref.hasComponent(CableComponent.class)) {
-
-        } else if (ref.hasComponent(LeafNodeComponent.class)) {
-
-        }
+//        EntityRef ref = event.getPlacedBlock();
+//        final Vector3i location = event.getPosition();
+//        if (ref.hasComponent(CableComponent.class)) {
+//
+//        } else if (ref.hasComponent(SignalLeafComponent.class)) {
+//
+//        }
 
     }
 
-    @ReceiveEvent(components = {LeafNodeComponent.class})
+    @ReceiveEvent(components = {SignalLeafComponent.class})
     public void onLeafRemoved(BeforeDestroyEvent event, EntityRef block) {
 
     }
@@ -106,8 +87,66 @@ public class SignalSystem extends BaseComponentSystem {
 
     }
 
-    public void setOutput(EntityRef entityRef, Side side, long delay,boolean isActive) {
 
+    public void updateAllNodesFromSide(EntityRef entityRef, Side side) {
+        if (entityRef.hasComponent(SignalLeafComponent.class)) {
+            BlockComponent blockComponent = entityRef.getComponent(BlockComponent.class);
+
+            for (EntityRef entity : networkSystem.findDistanceFromLeafToAllOtherLeafs(blockComponent.getPosition(), side).keySet()) {
+                updateNode(entity);
+            }
+        }
+    }
+
+    public int getOutputStrength(SignalLeafComponent leafComponent, Side side) {
+        for (SignalLeafComponent.OuputMapping outputMapping : leafComponent.outputs) {
+            if (outputMapping != null && outputMapping.side == side)
+                return outputMapping.strength;
+        }
+        return 0;
+    }
+
+    public void setOutput(EntityRef entityRef, Side side, int strength) {
+        SignalLeafComponent leafComponent = entityRef.getComponent(SignalLeafComponent.class);
+        if (leafComponent == null)
+            return;
+
+        if (getOutputStrength(leafComponent, side) == strength)
+            return;
+
+        leafComponent.outputs.removeIf(ouputMapping ->
+                ouputMapping == null || ouputMapping.side == side
+        );
+        leafComponent.outputs.add(new SignalLeafComponent.OuputMapping(side, strength));
+        entityRef.saveComponent(leafComponent);
+        updateAllNodesFromSide(entityRef, side);
+    }
+
+    public void updateNode(EntityRef entityRef) {
+        BlockComponent blockComponent = entityRef.getComponent(BlockComponent.class);
+
+        Map<Side, Integer> inputs = Maps.newHashMap();
+        for (Side side : SideBitFlag.getSides(networkSystem.getLeafInputConnection(entityRef))) {
+            int power = 0;
+            for (Map.Entry<EntityRef, Set<NetworkSystem.SideDistance>> nodes : networkSystem.findDistanceFromLeafToAllOtherLeafs(blockComponent.getPosition(), side).entrySet()) {
+                EntityRef ref = nodes.getKey();
+                SignalLeafComponent leafNodeComponent = ref.getComponent(SignalLeafComponent.class);
+                for (NetworkSystem.SideDistance distance : nodes.getValue()) {
+                    int outputStrength = this.getOutputStrength(leafNodeComponent, distance.side);
+                    if (outputStrength == -1) {
+                        power = -1;
+                        break;
+                    }
+                    int delta = outputStrength - distance.distance;
+                    if (delta > 0 && delta > power) {
+                        power = delta;
+                    }
+                }
+            }
+            inputs.put(side, power);
+        }
+        entityRef.send(new LeafNodeSignalChange(inputs));
     }
 
 }
+

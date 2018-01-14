@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 MovingBlocks
+ * Copyright 2017 MovingBlocks
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,18 +15,31 @@
  */
 package org.terasology.signalling.components;
 
+
 import com.google.common.collect.Lists;
 import org.terasology.entitySystem.Component;
 import org.terasology.math.Side;
+import org.terasology.reflection.MappedContainer;
 
 import java.util.List;
 
-/**
- * A Component that adds logic gate functionality to an Entity.
- * The gateType determines the function, and can either be AND, OR, XOR, or NAND.
- * functionalSides represents the sides that can affect the gate. There is only one output side, the rest can be input.
- */
-public class SignalGateComponent implements Component {
-    public String gateType;
-    public List<Side> functionalSides = Lists.newArrayList();
+
+
+public class SignalLeafComponent implements Component {
+    public byte connections;
+    public byte inputs;
+    public List<OuputMapping> outputs = Lists.newArrayList();
+
+    @MappedContainer
+    public static class OuputMapping{
+        public Side side;
+        public int strength;
+        public OuputMapping(){
+        }
+        public OuputMapping(Side side, int strength){
+            this.side = side;
+            this.strength = strength;
+        }
+    }
 }
+

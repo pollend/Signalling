@@ -1,8 +1,0 @@
-{
-    "parent": "engine:itemBase",
-    "Item": {
-        "name": "Screwdriver",
-        "icon": "engine:items#axe"
-    },
-    "Screwdriver": {}
-}

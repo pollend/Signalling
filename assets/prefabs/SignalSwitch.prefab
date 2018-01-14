@@ -1,6 +1,8 @@
 {
-    "SignalProducer": {
-        "connectionSides": 63,
-        "signalStrength": 0
+    "SignalLeaf":{
+         "connections" : 63
+    },
+    "ToggleSwitch" : {
+
     }
 }

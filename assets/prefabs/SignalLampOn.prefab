@@ -1,8 +1,9 @@
 {
-    "SignalConsumer": {
-        "connectionSides": 63
+    "SignalLamp":{
+
     },
-    "SignalConsumerStatus": {
-        "hasSignal": true
+    "SignalLeaf":{
+        "connections" : 63,
+        "inputs": 63
     }
 }

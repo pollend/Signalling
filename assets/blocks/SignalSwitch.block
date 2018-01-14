@@ -4,6 +4,7 @@
         "all": "signalling:SignalOutput"
     },
     "entity": {
-        "prefab": "signalling:SignalSwitch"
+        "prefab": "signalling:SignalSwitch",
+        "keepActive": true
     }
 }

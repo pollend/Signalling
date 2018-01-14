@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 MovingBlocks
+ * Copyright 2017 MovingBlocks
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,12 +16,7 @@
 package org.terasology.signalling.components;
 
 import org.terasology.entitySystem.Component;
-import org.terasology.world.block.ForceBlockActive;
 
-/**
- * Responsible for keeping track of whether a signal producer has been modified.
- * The presence or abscence of this component is used to store this data.
- */
-@ForceBlockActive
-public class SignalProducerModifiedComponent implements Component {
+public class ToggleSwitchComponent implements Component {
+    public boolean isActive = false;
 }

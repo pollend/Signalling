@@ -4,6 +4,7 @@
         "pickupFamily": "signalling:SignalLampOff"
     },
     "entity": {
-        "prefab": "signalling:SignalLampOn"
+        "prefab": "signalling:SignalLampOn",
+        "keepActive": true
     }
 }

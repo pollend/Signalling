@@ -15,16 +15,7 @@
  */
 package org.terasology.signalling.components;
 
-import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
 import org.terasology.entitySystem.Component;
-import org.terasology.entitySystem.entity.EntityRef;
-import org.terasology.math.Side;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeMap;
 
-public class LeafNodeComponent implements Component {
-    public Map<Side,Integer> outputs = Maps.newHashMap();
-    public Set<Side> inputs = Sets.newHashSet();
+public class SignalLampComponent implements Component {
 }
