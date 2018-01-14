@@ -27,19 +27,5 @@ import java.util.List;
 
 public class SignalLeafComponent implements Component {
     public byte connections;
-    public byte inputs;
-    public List<OuputMapping> outputs = Lists.newArrayList();
-
-    @MappedContainer
-    public static class OuputMapping{
-        public Side side;
-        public int strength;
-        public OuputMapping(){
-        }
-        public OuputMapping(Side side, int strength){
-            this.side = side;
-            this.strength = strength;
-        }
-    }
 }
 
