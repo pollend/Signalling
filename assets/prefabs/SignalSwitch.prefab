@@ -1,6 +1,6 @@
 {
     "SignalLeaf":{
-         "connections" : 63
+        "outputs": 63
     },
     "ToggleSwitch" : {
 

@@ -30,32 +30,4 @@ public class SignalStateComponent  implements Component {
 
     public static final ImmutableList<Side> OUTPUT_SIDES = ImmutableList.of(Side.LEFT,Side.FRONT,Side.RIGHT,Side.BACK,Side.TOP,Side.BOTTOM);
     public int[] outputs = new int[6];
-
-
-//    public List<CacheEntry> cacheEntries = Lists.newArrayList();
-
-//    @MappedContainer
-//    public static class OuputMapping{
-//        public Side side;
-//        public int strength;
-//        public OuputMapping(){
-//        }
-//        public OuputMapping(Side side, int strength){
-//            this.side = side;
-//            this.strength = strength;
-//        }
-//    }
-//
-//    @MappedContainer
-//    public static class CacheEntry{
-//        public Side remoteSide;
-//        public EntityRef remoteEntity;
-//
-//        public CacheEntry(){
-//        }
-//        public CacheEntry(Side side, Side remoteSide, EntityRef remoteEntity){
-//            this.remoteSide = remoteSide;
-//            this.remoteEntity = remoteEntity;
-//        }
-//    }
 }

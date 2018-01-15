@@ -21,6 +21,7 @@ import org.terasology.math.Side;
 import org.terasology.math.SideBitFlag;
 import org.terasology.math.geom.Vector3i;
 import org.terasology.registry.In;
+import org.terasology.signalling.componentSystem.SignalSystem;
 import org.terasology.signalling.components.CableComponent;
 import org.terasology.signalling.components.SignalLeafComponent;
 import org.terasology.world.BlockEntityRegistry;
@@ -41,6 +42,8 @@ import org.terasology.world.block.shapes.BlockShape;
 public class SignalCableBlockFamily extends MultiConnectFamily {
     @In
     private BlockEntityRegistry blockEntityRegistry;
+    @In
+    private SignalSystem signalSystem;
 
 
     public SignalCableBlockFamily(BlockFamilyDefinition definition, BlockShape shape, BlockBuilderHelper blockBuilder) {
@@ -52,16 +55,16 @@ public class SignalCableBlockFamily extends MultiConnectFamily {
 
         BlockUri blockUri = new BlockUri(definition.getUrn());
 
-        this.registerBlock(blockUri, definition, blockBuilder, "no_connections", (byte) 0, Rotation.horizontalRotations());
-        this.registerBlock(blockUri, definition, blockBuilder, "one_connection", SideBitFlag.getSide(Side.BACK), Rotation.horizontalRotations());
-        this.registerBlock(blockUri, definition, blockBuilder, "line_connection", SideBitFlag.getSides(Side.FRONT, Side.BACK), Rotation.horizontalRotations());
-        this.registerBlock(blockUri, definition, blockBuilder, "2d_corner", SideBitFlag.getSides(Side.LEFT, Side.BACK), Rotation.horizontalRotations());
-        this.registerBlock(blockUri, definition, blockBuilder, "3d_corner", SideBitFlag.getSides(Side.LEFT, Side.BACK, Side.TOP), Rotation.horizontalRotations());
-        this.registerBlock(blockUri, definition, blockBuilder, "2d_t", SideBitFlag.getSides(Side.LEFT, Side.BACK, Side.FRONT), Rotation.horizontalRotations());
-        this.registerBlock(blockUri, definition, blockBuilder, "cross", SideBitFlag.getSides(Side.RIGHT, Side.LEFT, Side.BACK, Side.FRONT), Rotation.horizontalRotations());
-        this.registerBlock(blockUri, definition, blockBuilder, "3d_side", SideBitFlag.getSides(Side.LEFT, Side.BACK, Side.FRONT, Side.TOP), Rotation.horizontalRotations());
-        this.registerBlock(blockUri, definition, blockBuilder, "five_connections", SideBitFlag.getSides(Side.LEFT, Side.BACK, Side.FRONT, Side.TOP, Side.BOTTOM), Rotation.horizontalRotations());
-        this.registerBlock(blockUri, definition, blockBuilder, "all", SideBitFlag.getSides(Side.LEFT, Side.BACK, Side.FRONT, Side.TOP, Side.BOTTOM, Side.RIGHT), Rotation.horizontalRotations());
+        this.registerBlock(blockUri, definition, blockBuilder, "no_connections", (byte) 0, Rotation.allValues());
+        this.registerBlock(blockUri, definition, blockBuilder, "one_connection", SideBitFlag.getSide(Side.BACK), Rotation.allValues());
+        this.registerBlock(blockUri, definition, blockBuilder, "line_connection", SideBitFlag.getSides(Side.FRONT, Side.BACK), Rotation.allValues());
+        this.registerBlock(blockUri, definition, blockBuilder, "2d_corner", SideBitFlag.getSides(Side.LEFT, Side.BACK), Rotation.allValues());
+        this.registerBlock(blockUri, definition, blockBuilder, "3d_corner", SideBitFlag.getSides(Side.LEFT, Side.BACK, Side.TOP), Rotation.allValues());
+        this.registerBlock(blockUri, definition, blockBuilder, "2d_t", SideBitFlag.getSides(Side.LEFT, Side.BACK, Side.FRONT), Rotation.allValues());
+        this.registerBlock(blockUri, definition, blockBuilder, "cross", SideBitFlag.getSides(Side.RIGHT, Side.LEFT, Side.BACK, Side.FRONT), Rotation.allValues());
+        this.registerBlock(blockUri, definition, blockBuilder, "3d_side", SideBitFlag.getSides(Side.LEFT, Side.BACK, Side.FRONT, Side.TOP), Rotation.allValues());
+        this.registerBlock(blockUri, definition, blockBuilder, "five_connections", SideBitFlag.getSides(Side.LEFT, Side.BACK, Side.FRONT, Side.TOP, Side.BOTTOM), Rotation.allValues());
+        this.registerBlock(blockUri, definition, blockBuilder, "all", SideBitFlag.getSides(Side.LEFT, Side.BACK, Side.FRONT, Side.TOP, Side.BOTTOM, Side.RIGHT), Rotation.allValues());
 
     }
 
@@ -85,8 +88,9 @@ public class SignalCableBlockFamily extends MultiConnectFamily {
             return false;
         if (entityRef.hasComponent(SignalLeafComponent.class)) {
             SignalLeafComponent leafNodeComponent = entityRef.getComponent(SignalLeafComponent.class);
-            for (Side side : SideBitFlag.getSides(leafNodeComponent.connections)) {
-                if (side.equals(connectSide.reverse())) {
+
+            for (Side side : SideBitFlag.getSides(signalSystem.getAllConnections(entityRef))) {
+                if (side == connectSide.reverse()) {
                     return true;
                 }
             }

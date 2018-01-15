@@ -15,26 +15,22 @@
  */
 package org.terasology.signalling.componentSystem;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.terasology.engine.Time;
 import org.terasology.entitySystem.entity.EntityRef;
-import org.terasology.entitySystem.event.ReceiveEvent;
 import org.terasology.entitySystem.systems.BaseComponentSystem;
 import org.terasology.entitySystem.systems.RegisterMode;
 import org.terasology.entitySystem.systems.RegisterSystem;
 import org.terasology.logic.config.ModuleConfigManager;
-import org.terasology.logic.health.BeforeDestroyEvent;
-import org.terasology.math.Rotation;
+import org.terasology.logic.delay.DelayManager;
 import org.terasology.math.Side;
 import org.terasology.math.SideBitFlag;
 import org.terasology.math.geom.Vector3i;
 import org.terasology.registry.In;
 import org.terasology.registry.Share;
-import org.terasology.signalling.blockFamily.SignalCableBlockFamily;
 import org.terasology.signalling.components.CableComponent;
 import org.terasology.signalling.components.SignalLeafComponent;
 import org.terasology.signalling.components.SignalStateComponent;
@@ -44,11 +40,11 @@ import org.terasology.world.WorldProvider;
 import org.terasology.world.block.Block;
 import org.terasology.world.block.BlockComponent;
 import org.terasology.world.block.family.MultiConnectFamily;
-import org.terasology.world.block.items.OnBlockItemPlaced;
 
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 
 @RegisterSystem(value = RegisterMode.AUTHORITY)
@@ -65,9 +61,9 @@ public class SignalSystem extends BaseComponentSystem {
     @In
     private ModuleConfigManager moduleConfigManager;
     @In
-    private NetworkSystem networkSystem;
+    private DelayManager delayManager;
 
-    public byte getConnection(EntityRef entityRef, byte sides)
+    private byte getConnection(EntityRef entityRef, byte sides)
     {
         BlockComponent blockComponent = entityRef.getComponent(BlockComponent.class);
         if (blockComponent == null)
@@ -87,26 +83,81 @@ public class SignalSystem extends BaseComponentSystem {
         return 0;
     }
 
-    public byte getActiveOutputs(EntityRef entityRef) {
+
+    public byte getConnectedInputs(EntityRef entityRef){
+        SignalLeafComponent signalStateComponent = entityRef.getComponent(SignalLeafComponent.class);
+        if(signalStateComponent == null)
+            return 0;
+        return getConnection(entityRef,signalStateComponent.inputs);
+    }
+
+    public byte getConnectedOutputs(EntityRef entityRef){
+        SignalLeafComponent signalStateComponent = entityRef.getComponent(SignalLeafComponent.class);
+        if(signalStateComponent == null)
+            return 0;
+        return getConnection(entityRef,signalStateComponent.outputs);
+    }
+
+    public byte getAllConnections(EntityRef entityRef){
+        SignalLeafComponent signalStateComponent = entityRef.getComponent(SignalLeafComponent.class);
+        if(signalStateComponent == null)
+            return 0;
+        return getConnection(entityRef, (byte) (signalStateComponent.outputs | signalStateComponent.inputs));
+    }
+
+
+    public int getLeafOutput(EntityRef entityRef,Side side){
         SignalStateComponent signalStateComponent = entityRef.getComponent(SignalStateComponent.class);
         if(signalStateComponent == null)
             return 0;
-        byte outputs = 0;
-        for(int x = 0; x < signalStateComponent.outputs.length; x++){
-            if(signalStateComponent.outputs[x] != 0) {
-                outputs |= SideBitFlag.getSide(SignalStateComponent.OUTPUT_SIDES.get(x));
-            }
-        }
-        return getConnection(entityRef,outputs);
+        return signalStateComponent.outputs[SignalStateComponent.OUTPUT_SIDES.indexOf(side)];
     }
 
-    public byte getAllConnections(EntityRef entityRef)
+    public boolean setLeafOutput(EntityRef entityRef, Side side, int strength) {
+        if (!entityRef.hasComponent(SignalLeafComponent.class))
+            return false;
+
+        if ((getConnectedOutputs(entityRef) & SideBitFlag.getSide(side)) > 0) {
+
+            SignalStateComponent signalStateComponent = entityRef.getComponent(SignalStateComponent.class);
+            if (signalStateComponent == null)
+                signalStateComponent = new SignalStateComponent();
+            if(signalStateComponent.outputs[SignalStateComponent.OUTPUT_SIDES.indexOf(side)] != strength)
+                return true;
+
+            signalStateComponent.outputs[SignalStateComponent.OUTPUT_SIDES.indexOf(side)] = strength;
+            entityRef.addOrSaveComponent(signalStateComponent);
+            signalAllLeafsFromSide(entityRef, side);
+            return true;
+        }
+        return false;
+    }
+
+
+    public int getLeafInput(EntityRef entityRef, Side side){
+
+        BlockComponent blockComponent =  entityRef.getComponent(BlockComponent.class);
+
+        AtomicInteger strength = new AtomicInteger();
+        findDistanceToLeaf(blockComponent.getPosition(), side, (targetSide, distance, target) -> {
+            int outputStrength = getLeafOutput(target,targetSide);
+            if(outputStrength == -1) {
+                strength.set(-1);
+                return false;
+            }
+            int delta = outputStrength - distance;
+            if(delta > 0 && strength.get() < delta){
+                strength.set(delta);
+            }
+            return true;
+        });
+        return strength.get();
+    }
+
+    public byte getConnections(EntityRef entityRef)
     {
         if(entityRef.hasComponent(SignalLeafComponent.class)) {
-            SignalLeafComponent leafNodeComponent = entityRef.getComponent(SignalLeafComponent.class);
-            if (leafNodeComponent == null)
-                return 0;
-            return getConnection(entityRef, leafNodeComponent.connections);
+            return getAllConnections(entityRef);
         }
         else if(entityRef.hasComponent(CableComponent.class)) {
             BlockComponent blockComponent = entityRef.getComponent(BlockComponent.class);
@@ -120,72 +171,30 @@ public class SignalSystem extends BaseComponentSystem {
 
 
 
-    public void updateAllNodesFromSide(EntityRef entityRef, Side side) {
-//        if (entityRef.hasComponent(SignalLeafComponent.class)) {
-//            BlockComponent blockComponent = entityRef.getComponent(BlockComponent.class);
-//
-//            for (EntityRef entity : networkSystem.findDistanceFromLeafToAllOtherLeafs(blockComponent.getPosition(), side).keySet()) {
-//                updateNode(entity);
-//            }
-//        }
+    public void signalAllLeafsFromSide(EntityRef entityRef, Side side) {
+        if (entityRef.hasComponent(SignalLeafComponent.class)) {
+            BlockComponent blockComponent = entityRef.getComponent(BlockComponent.class);
+            this.findDistanceToLeaf(blockComponent.getPosition(), side, (targetSide, distance, target) -> {
+                signalLeafChange(target);
+                return true;
+            });
+        }
     }
 
-    public int getOutputStrength(SignalLeafComponent leafComponent, Side side) {
-//        for (SignalLeafComponent.OuputMapping outputMapping : leafComponent.outputs) {
-//            if (outputMapping != null && outputMapping.side == side)
-//                return outputMapping.strength;
-//        }
-        return 0;
+
+    public void signalLeafChange(EntityRef entityRef) {
+        Map<Side,Integer> inputs = Maps.newHashMap();
+        for(Side side: SideBitFlag.getSides(this.getConnectedInputs(entityRef))){
+            if(getLeafInput(entityRef,side) != 0) {
+                inputs.put(side, getLeafInput(entityRef, side));
+            }
+        }
+        entityRef.send(new LeafNodeSignalChange(inputs));
     }
 
-    public void setOutput(EntityRef entityRef, Side side, int strength) {
-//        SignalLeafComponent leafComponent = entityRef.getComponent(SignalLeafComponent.class);
-//        if (leafComponent == null)
-//            return;
-//
-//        if (getOutputStrength(leafComponent, side) == strength)
-//            return;
-//
-//        leafComponent.outputs.removeIf(ouputMapping ->
-//                ouputMapping == null || ouputMapping.side == side
-//        );
-//        leafComponent.outputs.add(new SignalLeafComponent.OuputMapping(side, strength));
-//        entityRef.saveComponent(leafComponent);
-//        updateAllNodesFromSide(entityRef, side);
-    }
-
-    public void updateNode(EntityRef entityRef) {
-//        BlockComponent blockComponent = entityRef.getComponent(BlockComponent.class);
-//
-//        Map<Side, Integer> inputs = Maps.newHashMap();
-//        for (Side side : SideBitFlag.getSides(networkSystem.getLeafInputConnection(entityRef))) {
-//            int power = 0;
-//            for (Map.Entry<EntityRef, Set<NetworkSystem.SideDistance>> nodes : networkSystem.findDistanceFromLeafToAllOtherLeafs(blockComponent.getPosition(), side).entrySet()) {
-//                EntityRef ref = nodes.getKey();
-//                SignalLeafComponent leafNodeComponent = ref.getComponent(SignalLeafComponent.class);
-//                for (NetworkSystem.SideDistance distance : nodes.getValue()) {
-//                    int outputStrength = this.getOutputStrength(leafNodeComponent, distance.side);
-//                    if (outputStrength == -1) {
-//                        power = -1;
-//                        break;
-//                    }
-//                    int delta = outputStrength - distance.distance;
-//                    if (delta > 0 && delta > power) {
-//                        power = delta;
-//                    }
-//                }
-//            }
-//            inputs.put(side, power);
-//        }
-//        entityRef.send(new LeafNodeSignalChange(inputs));
-    }
-
-    public Map<EntityRef, Set<SideDistance>> findDistanceFromLeafToAllOtherLeafs(Vector3i location, Side side) {
-        Map<EntityRef, Set<SideDistance>> result = Maps.newLinkedHashMap();
-
+    public void findDistanceToLeaf(Vector3i location, Side side, SignalResponse handler) {
         TreeMap<Integer, Set<Vector3i>> toVisit = new TreeMap<>();
         toVisit.put(1, Sets.newHashSet(new Vector3i(location).add(side.getVector3i())));
-
         Set<Vector3i> visited = Sets.newHashSet(location);
         do {
             int minimum = toVisit.firstKey();
@@ -193,38 +202,30 @@ public class SignalSystem extends BaseComponentSystem {
             for (Vector3i entry : entries) {
                 EntityRef ref = blockEntityRegistry.getBlockEntityAt(entry);
                 BlockComponent blockComponent = ref.getComponent(BlockComponent.class);
-//                for (Side s : SideBitFlag.getSides(getConnections(ref))) {
-//                    Vector3i loc = new Vector3i(blockComponent.getPosition()).add(s.getVector3i());
-//                    EntityRef nextEntityRef = blockEntityRegistry.getBlockEntityAt(loc);
-//                    if (!visited.contains(loc)) {
-//                        if (nextEntityRef.hasComponent(SignalLeafComponent.class)) {
-//                            Set<SideDistance> sideDistances = result.getOrDefault(nextEntityRef, Sets.newHashSet());
-//                            sideDistances.add(new SideDistance(s.reverse(), minimum));
-//                            result.put(nextEntityRef, sideDistances);
-//                        } else if (nextEntityRef.hasComponent(CableComponent.class)) {
-//                            toVisit.putIfAbsent(minimum + 1, Sets.newHashSet());
-//                            Set<Vector3i> entrySet = toVisit.get(minimum + 1);
-//                            entrySet.add(loc);
-//                            visited.add(loc);
-//                        }
-//                    }
-//                }
+                for (Side s : SideBitFlag.getSides(getConnections(ref))) {
+                    Vector3i loc = new Vector3i(blockComponent.getPosition()).add(s.getVector3i());
+                    EntityRef nextEntityRef = blockEntityRegistry.getBlockEntityAt(loc);
+                    if (!visited.contains(loc)) {
+                        if (nextEntityRef.hasComponent(SignalLeafComponent.class)) {
+                            if(!handler.response(s.reverse(),minimum,nextEntityRef))
+                                return;
+                        } else if (nextEntityRef.hasComponent(CableComponent.class)) {
+                            toVisit.putIfAbsent(minimum + 1, Sets.newHashSet());
+                            Set<Vector3i> entrySet = toVisit.get(minimum + 1);
+                            entrySet.add(loc);
+                        }
+                        visited.add(loc);
+                    }
+                }
             }
             toVisit.remove(minimum);
         }
         while (toVisit.size() > 0);
 
-        return result;
     }
 
-    public static class SideDistance {
-        public final Side side;
-        public final int distance;
-
-        public SideDistance(Side side, int distance) {
-            this.side = side;
-            this.distance = distance;
-        }
+    public interface SignalResponse{
+        boolean response(Side targetSide,int distance, EntityRef target);
     }
 
 }

@@ -13,12 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.terasology.signalling.components;
+package org.terasology.signalling.components.gates;
 
 import org.terasology.entitySystem.Component;
 
-public class SignalLeafComponent implements Component {
-    public byte outputs = 0;
-    public byte inputs = 0;
+public class OrGateComponent implements Component {
 }
-

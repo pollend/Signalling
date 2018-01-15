@@ -17,12 +17,18 @@ package org.terasology.signalling.componentSystem;
 
 import org.terasology.entitySystem.entity.EntityRef;
 import org.terasology.entitySystem.event.ReceiveEvent;
+import org.terasology.entitySystem.systems.BaseComponentSystem;
+import org.terasology.entitySystem.systems.RegisterMode;
+import org.terasology.entitySystem.systems.RegisterSystem;
+import org.terasology.logic.delay.DelayedActionComponent;
+import org.terasology.logic.delay.DelayedActionTriggeredEvent;
 import org.terasology.logic.health.BeforeDestroyEvent;
 import org.terasology.signalling.components.CableComponent;
 import org.terasology.signalling.components.SignalLeafComponent;
 import org.terasology.world.block.items.OnBlockItemPlaced;
 
-public class SignalStateSystem {
+@RegisterSystem(value = RegisterMode.AUTHORITY)
+public class SignalStateSystem extends BaseComponentSystem {
 
 
     /**
@@ -52,4 +58,5 @@ public class SignalStateSystem {
     public void onCableRemoved(BeforeDestroyEvent event, EntityRef block) {
 
     }
+
 }
