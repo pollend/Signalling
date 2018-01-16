@@ -25,7 +25,6 @@ import org.terasology.entitySystem.systems.BaseComponentSystem;
 import org.terasology.entitySystem.systems.RegisterMode;
 import org.terasology.entitySystem.systems.RegisterSystem;
 import org.terasology.logic.config.ModuleConfigManager;
-import org.terasology.logic.delay.DelayManager;
 import org.terasology.math.Side;
 import org.terasology.math.SideBitFlag;
 import org.terasology.math.geom.Vector3i;
@@ -60,8 +59,6 @@ public class SignalSystem extends BaseComponentSystem {
     private BlockEntityRegistry blockEntityRegistry;
     @In
     private ModuleConfigManager moduleConfigManager;
-    @In
-    private DelayManager delayManager;
 
     private byte getConnection(EntityRef entityRef, byte sides)
     {
@@ -82,6 +79,7 @@ public class SignalSystem extends BaseComponentSystem {
         }
         return 0;
     }
+
 
 
     public byte getConnectedInputs(EntityRef entityRef){
@@ -122,7 +120,7 @@ public class SignalSystem extends BaseComponentSystem {
             SignalStateComponent signalStateComponent = entityRef.getComponent(SignalStateComponent.class);
             if (signalStateComponent == null)
                 signalStateComponent = new SignalStateComponent();
-            if(signalStateComponent.outputs[SignalStateComponent.OUTPUT_SIDES.indexOf(side)] != strength)
+            if(signalStateComponent.outputs[SignalStateComponent.OUTPUT_SIDES.indexOf(side)] == strength)
                 return true;
 
             signalStateComponent.outputs[SignalStateComponent.OUTPUT_SIDES.indexOf(side)] = strength;

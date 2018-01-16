@@ -35,9 +35,6 @@ import org.terasology.world.block.BlockManager;
 @RegisterSystem(RegisterMode.AUTHORITY)
 public class SignalLampAction  extends BaseComponentSystem {
     @In
-    private SignalSystem signalSystem;
-
-    @In
     private BlockManager blockManager;
 
     @In
@@ -56,20 +53,12 @@ public class SignalLampAction  extends BaseComponentSystem {
     }
 
     @ReceiveEvent(components = {BlockComponent.class, SignalLampComponent.class, SignalLeafComponent.class})
-    public void signalChange(LeafNodeSignalChange event, EntityRef entity,BlockComponent blockComponent, SignalLampComponent signalLampComponent, SignalLeafComponent leafNodeComponent) {
+    public void signalChange(LeafNodeSignalChange event, EntityRef entity, BlockComponent blockComponent) {
 
-        for(Integer value: event.getInputs().values())
-        {
-            if(value != 0) {
-                worldProvider.setBlock(blockComponent.getPosition(), lampTurnedOn);
-                EntityRef entityRef = blockEntityRegistry.getBlockEntityAt(blockComponent.getPosition());
-                entityRef.saveComponent(leafNodeComponent);
-                return;
-            }
+        if (event.getInputs().size() > 0) {
+            worldProvider.setBlock(blockComponent.getPosition(), lampTurnedOn);
+        } else {
+            worldProvider.setBlock(blockComponent.getPosition(), lampTurnedOff);
         }
-        worldProvider.setBlock(blockComponent.getPosition(), lampTurnedOff);
-        EntityRef entityRef = blockEntityRegistry.getBlockEntityAt(blockComponent.getPosition());
-        entityRef.saveComponent(leafNodeComponent);
-
     }
 }

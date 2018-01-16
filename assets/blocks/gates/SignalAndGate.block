@@ -1,0 +1,12 @@
+{
+    "displayName": "Signal AND Gate",
+    "family": "horizontal",
+    "tiles": {
+        "all": "signalling:SignalAndGate",
+        "front": "signalling:SignalOutput"
+    },
+    "entity": {
+        "prefab": "signalling:SignalAndGate",
+         "keepActive": true
+    }
+}

@@ -15,5 +15,7 @@
  */
 package org.terasology.signalling.components.gates;
 
-public class AndGateComponent {
+import org.terasology.entitySystem.Component;
+
+public class AndGateComponent implements Component {
 }

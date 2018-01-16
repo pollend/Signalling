@@ -15,5 +15,7 @@
  */
 package org.terasology.signalling.components.gates;
 
-public class XorGateComponent {
+import org.terasology.entitySystem.Component;
+
+public class XorGateComponent implements Component {
 }

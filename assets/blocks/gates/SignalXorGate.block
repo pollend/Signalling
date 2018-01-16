@@ -1,0 +1,12 @@
+{
+    "displayName": "Signal XOR Gate",
+     "family": "horizontal",
+    "tiles": {
+        "all": "signalling:SignalXorGate",
+        "front": "signalling:SignalOutput"
+    },
+    "entity": {
+        "prefab": "signalling:SignalXorGate",
+         "keepActive": true
+    }
+}

@@ -1,0 +1,12 @@
+{
+    "displayName": "Signal OR Gate",
+     "family": "horizontal",
+    "tiles": {
+        "all": "signalling:SignalOrGate",
+        "front": "signalling:SignalOutput"
+    },
+    "entity": {
+        "prefab": "signalling:SignalOrGate",
+         "keepActive": true
+    }
+}
